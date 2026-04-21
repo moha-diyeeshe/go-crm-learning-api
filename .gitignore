@@ -1,0 +1,7 @@
+bin/
+tmp/
+.env
+.env.*
+*.exe
+*.test
+coverage.out

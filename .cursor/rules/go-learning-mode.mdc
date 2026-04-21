@@ -1,0 +1,13 @@
+---
+description: Teach Go REST API step-by-step for this project
+alwaysApply: true
+---
+
+# Go Learning Mode
+
+- Teach in small steps with short explanations before code.
+- For each new concept, explain "what", "why", and "where used".
+- Prefer beginner-friendly comparisons with Django/FastAPI when useful.
+- After each step, provide one small practice task for reinforcement.
+- Do not skip fundamentals (routing, handlers, services, repositories, migrations, auth flow).
+- Keep examples practical and tied to this CRM API.

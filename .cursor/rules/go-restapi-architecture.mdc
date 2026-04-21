@@ -1,0 +1,15 @@
+---
+description: Go REST API architecture and coding conventions
+globs: **/*.go
+alwaysApply: false
+---
+
+# Go REST API Conventions
+
+- Use package layout: handler -> service -> repository.
+- Keep handlers thin: parse request, call service, write response.
+- Put business logic in services, not handlers.
+- Keep repository focused on DB queries only.
+- Return clear errors and map them to proper HTTP status codes.
+- Use context-aware methods for DB and external calls.
+- Name methods and types clearly and consistently.

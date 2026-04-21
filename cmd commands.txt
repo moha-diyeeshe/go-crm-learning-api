@@ -1,0 +1,68 @@
+# Go CRM Learning API - Commands and Purpose
+
+## 1) Project setup commands
+
+`mkdir projects\personal\go-crm-learning-api`
+- Creates your new project folder.
+
+`cd projects\personal\go-crm-learning-api`
+- Moves terminal into your project root.
+
+`go mod init go-crm-learning-api`
+- Initializes Go module (like creating Python project metadata).
+
+`mkdir cmd\server`
+- Creates entrypoint folder for executable app startup.
+
+`mkdir internal\platform\database`
+- Creates database infrastructure package.
+
+`mkdir internal\auth,internal\users,internal\crm,internal\crm\customers,internal\crm\transactions,internal\config,internal\http`
+- Creates domain and application layer packages.
+
+`mkdir migrations,scripts`
+- Creates folders for SQL migrations and helper scripts.
+
+## 2) Environment commands
+
+`Copy-Item .env.example .env`
+- Creates your local environment file from template.
+
+`$env:APP_ENV="development"`
+- Sets app environment for this PowerShell session.
+
+`$env:HTTP_PORT="8080"`
+- Sets server port for this PowerShell session.
+
+`$env:DB_URL="postgres://postgres:admin@localhost:5432/go_crm_learning_api?sslmode=disable"`
+- Sets DB connection URL for this PowerShell session.
+
+## 3) Dependency and run commands
+
+`go mod tidy`
+- Downloads missing modules and cleans `go.mod`/`go.sum`.
+
+`go run .\cmd\server\main.go`
+- Builds and runs your API server from main file.
+
+`go run ./cmd/server`
+- Alternative (recommended) way to run the server package.
+
+## 4) Test and format commands
+
+`go test ./...`
+- Compiles/tests all packages recursively.
+
+`gofmt -w .`
+- Formats all Go files in place.
+
+## 5) Health check command
+
+`Invoke-WebRequest http://localhost:8080/health | Select-Object -Expand Content`
+- Calls health endpoint and prints JSON response only.
+
+## Why you got "DB_URL is required"
+
+Before this fix, code used `os.Getenv("DB_URL")` only, which reads values already loaded in shell.
+Writing `.env` file alone does not automatically export variables in Go.
+Now we added `godotenv.Load()` so `.env` is read automatically when app starts.
