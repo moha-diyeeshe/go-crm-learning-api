@@ -10,45 +10,152 @@ This project is your step-by-step Go REST API learning journey.
 - Build Transactions CRUD linked to customers.
 - Learn Go project structure, clean code layers, and practical API design.
 
-## Folder structure
+## Rebuild guide (from scratch)
 
-- `cmd/server`: app entrypoint.
-- `internal/config`: environment and config loading.
-- `internal/platform/database`: DB connection and query setup.
-- `internal/http`: router, middleware, and handlers.
-- `internal/auth`: auth use-cases (login/password flows/JWT).
-- `internal/users`: users module (model/repo/service/handler).
-- `internal/crm/customers`: customers module (model/repo/service/handler).
-- `internal/crm/transactions`: transactions module linked with customers.
-- `migrations`: SQL schema and migration scripts.
-- `scripts`: helper scripts (run, migrate, seed).
+Follow this exact order when rebuilding the project by yourself.
 
-## Step 1 (today)
+### 1) Folder structure
 
-1. Create project folder and Go module.
-2. Set learning rules in Cursor.
-3. Confirm structure and explain why each folder exists.
+Create this structure first:
 
-## Next step
+- `cmd/server`
+- `internal/config`
+- `internal/platform/database`
+- `internal/http`
+- `internal/auth`
+- `internal/users`
+- `internal/customers`
+- `http-tests`
 
-Step 2 will set up:
-- HTTP router (`chi`)
-- health check endpoint
-- env config
-- PostgreSQL connection
+### 2) Server setup
 
-## Step 2 run commands
+In `cmd/server/main.go`, do only app wiring:
 
-1. Copy env values:
-   - Windows PowerShell:
-     - `Copy-Item .env.example .env`
-2. Update `DB_URL` in `.env` to your local PostgreSQL credentials.
-3. Export env vars in PowerShell for current terminal:
-   - `$env:APP_ENV="development"`
-   - `$env:HTTP_PORT="8080"`
-   - `$env:DB_URL="postgres://postgres:postgres@localhost:5432/go_crm_learning_api?sslmode=disable"`
-4. Run:
-   - `go mod tidy`
-   - `go run ./cmd/server`
-5. Test health:
-   - `Invoke-WebRequest http://localhost:8080/health | Select-Object -Expand Content`
+- load config
+- create DB pool
+- create dependencies (`repo -> service -> handler`)
+- create router
+- start HTTP server
+
+### 3) Database setup
+
+In `internal/platform/database`, create DB pool + ping.
+
+In each module repository:
+
+- add `EnsureSchema(ctx)` to create table if missing
+
+### 4) Users CRUD (layer pattern)
+
+Build users in this order:
+
+1. `internal/users/model.go`
+2. `internal/users/repository.go`
+3. `internal/users/service.go`
+4. `internal/users/handler.go`
+
+### 5) Login with email/password
+
+Add endpoint:
+
+- `POST /api/v1/users/login`
+
+Body:
+
+```json
+{
+  "email": "user@example.com",
+  "password": "Pass@1234"
+}
+```
+
+### 6) JWT + refresh tokens
+
+Use `internal/auth/jwt.go`:
+
+- generate `access_token`
+- generate `refresh_token`
+- validate access token for protected routes
+- refresh endpoint to rotate token pair
+
+Add endpoint:
+
+- `POST /api/v1/users/token/refresh`
+
+Body:
+
+```json
+{
+  "refresh_token": "..."
+}
+```
+
+### 7) Customers CRUD
+
+Build customers with the same layer pattern:
+
+1. `internal/customers/model.go`
+2. `internal/customers/repository.go`
+3. `internal/customers/service.go`
+4. `internal/customers/handler.go`
+
+### 8) Protect CRUD routes (logged-in users only)
+
+Add JWT auth middleware in `internal/http` and apply it to route groups:
+
+- protect users CRUD routes
+- protect all customers CRUD routes
+- keep login/refresh as public endpoints
+
+## Environment variables
+
+Copy `.env.example` to `.env` and set values:
+
+- `APP_ENV=development`
+- `HTTP_PORT=8080`
+- `DB_URL=postgres://...`
+- `JWT_SECRET=your-strong-secret`
+- `JWT_TTL_MINUTES=60`
+- `JWT_REFRESH_TTL_HOURS=168`
+
+## How to run (PowerShell)
+
+```powershell
+Copy-Item .env.example .env
+go mod tidy
+go run .\cmd\server\main.go
+```
+
+Health check:
+
+```powershell
+Invoke-WebRequest http://localhost:8080/health | Select-Object -Expand Content
+```
+
+## Manual API test flow
+
+Use files in `http-tests`:
+
+1. `users.http`:
+   - create user
+   - login to get `access_token` + `refresh_token`
+   - call refresh endpoint
+   - call protected users endpoints with bearer access token
+2. `customers.http`:
+   - call all customer CRUD endpoints with bearer access token
+
+Header format for protected endpoints:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+## Done checklist
+
+- [ ] project structure created
+- [ ] config + DB connection working
+- [ ] users CRUD working
+- [ ] login returns access + refresh tokens
+- [ ] refresh endpoint returns rotated token pair
+- [ ] customers CRUD working
+- [ ] protected endpoints require bearer access token

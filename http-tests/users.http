@@ -1,7 +1,7 @@
 @baseUrl = http://localhost:8080
 @userId = 1
-@accessToken = REPLACE_WITH_ACCESS_TOKEN
-@refreshToken = REPLACE_WITH_REFRESH_TOKEN
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ0b2tlbl91c2UiOiJhY2Nlc3MiLCJleHAiOjE3NzY4NjQ3ODIsImlhdCI6MTc3Njg2MTE4Mn0.7e1u2Ypt6JFz3Kjcpj-sOJah_y5xN5kAAHvviQh7lBY
+@refreshToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ0b2tlbl91c2UiOiJyZWZyZXNoIiwiZXhwIjoxNzc3NDY2MDI3LCJpYXQiOjE3NzY4NjEyMjd9.Nnt7YsPYGrWMYZBCclG0OJguq0KVDU8VMCWxUiJsfDI
 
 ### Create user
 POST {{baseUrl}}/api/v1/users
