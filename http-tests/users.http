@@ -6,8 +6,8 @@ POST {{baseUrl}}/api/v1/users
 Content-Type: application/json
 
 {
-  "name": "Alice Doe",
-  "email": "alice@example.com",
+  "name": "Mohamed Ali",
+  "email": "mohamedmuhudin17@gmail.com",
   "phone": "+15550001111",
   "password": "Pass@1234"
 }

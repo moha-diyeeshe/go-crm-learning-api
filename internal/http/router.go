@@ -9,6 +9,7 @@ import (
 
 func NewRouter(dbChecker func() error, usersHandler *users.Handler) http.Handler {
 	r := chi.NewRouter() // Create a new chi router instance.
+	r.Use(requestLogger) // Applies request logging middleware to every route on this router.
 
 	r.Get("/health", healthHandler(dbChecker)) // Register health endpoint.
 	r.Route("/api/v1", func(v1 chi.Router) {
