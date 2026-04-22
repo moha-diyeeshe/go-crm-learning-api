@@ -33,7 +33,7 @@ func requireAuth(jwtManager *auth.JWTManager) func(http.Handler) http.Handler { 
 				return
 			}
 
-			userID, err := jwtManager.ParseToken(token) // Validates JWT and extracts authenticated user ID.
+			userID, err := jwtManager.ParseAccessToken(token) // Validates access JWT and extracts authenticated user ID.
 			if err != nil {
 				writeUnauthorized(w, "invalid or expired token") // Returns 401 for parse/signature/expiry failures.
 				return

@@ -1,11 +1,11 @@
 @baseUrl = http://localhost:8080
 @customerId = 1
-@token = REPLACE_WITH_JWT_TOKEN_FROM_2FA_VERIFY
+@accessToken = REPLACE_WITH_ACCESS_TOKEN
 
 ### Create customer
 POST {{baseUrl}}/api/v1/customers
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{accessToken}}
 
 {
   "name": "Acme Corp",
@@ -15,16 +15,16 @@ Authorization: Bearer {{token}}
 
 ### List customers
 GET {{baseUrl}}/api/v1/customers
-Authorization: Bearer {{token}}
+Authorization: Bearer {{accessToken}}
 
 ### Get customer by id
 GET {{baseUrl}}/api/v1/customers/{{customerId}}
-Authorization: Bearer {{token}}
+Authorization: Bearer {{accessToken}}
 
 ### Update customer
 PUT {{baseUrl}}/api/v1/customers/{{customerId}}
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{accessToken}}
 
 {
   "name": "Acme Corporation",
@@ -34,4 +34,4 @@ Authorization: Bearer {{token}}
 
 ### Delete customer
 DELETE {{baseUrl}}/api/v1/customers/{{customerId}}
-Authorization: Bearer {{token}}
+Authorization: Bearer {{accessToken}}

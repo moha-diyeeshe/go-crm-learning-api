@@ -143,6 +143,19 @@ func (r *Repository) GetAuthData(ctx context.Context, id int64) (string, string,
 	return passwordHash, totpSecret, email, phone, nil // Returns all required auth data to service layer.
 }
 
+func (r *Repository) GetAuthDataByEmail(ctx context.Context, email string) (int64, string, error) { // Reads user ID and password hash by email for login endpoint.
+	var id int64                                                                                                        // Holds user ID mapped from database row.
+	var passwordHash string                                                                                             // Holds stored bcrypt hash for password verification.
+	err := r.pool.QueryRow(ctx, `SELECT id, password_hash FROM users WHERE email = $1`, email).Scan(&id, &passwordHash) // Queries login credentials by unique email.
+	if err != nil {                                                                                                     // Handles not-found and query errors.
+		if errors.Is(err, pgx.ErrNoRows) { // Maps missing email to domain not-found error.
+			return 0, "", ErrUserNotFound // Returns not-found for unknown email address.
+		}
+		return 0, "", fmt.Errorf("get auth data by email: %w", err) // Wraps unexpected query errors.
+	}
+	return id, passwordHash, nil // Returns user ID and password hash for login verification.
+}
+
 func (r *Repository) UpdatePassword(ctx context.Context, id int64, hash string, changedAt time.Time) error { // Persists new password hash and related security flags/timestamps.
 	tag, err := r.pool.Exec(ctx, `
 UPDATE users

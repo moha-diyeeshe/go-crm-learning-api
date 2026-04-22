@@ -33,10 +33,10 @@ func main() {
 	if err := userRepo.EnsureSchema(ctx); err != nil {
 		log.Fatalf("ensure schema: %v", err)
 	}
-	jwtManager := auth.NewJWTManager(cfg.JWTSecret, time.Duration(cfg.JWTTTLMinutes)*time.Minute) // Create shared JWT manager for auth token lifecycle.
-	userService := users.NewService(userRepo)                                                     // Create users business layer.
-	userHandler := users.NewHandler(userService, jwtManager)                                      // Create users HTTP handler.
-	customerRepo := customers.NewRepository(pool)                                                 // Create customers repository using shared DB pool.
+	jwtManager := auth.NewJWTManager(cfg.JWTSecret, time.Duration(cfg.JWTTTLMinutes)*time.Minute, time.Duration(cfg.JWTRefreshTTLHours)*time.Hour) // Create shared JWT manager for access/refresh token lifecycle.
+	userService := users.NewService(userRepo)                                                                                                      // Create users business layer.
+	userHandler := users.NewHandler(userService, jwtManager)                                                                                       // Create users HTTP handler.
+	customerRepo := customers.NewRepository(pool)                                                                                                  // Create customers repository using shared DB pool.
 	if err := customerRepo.EnsureSchema(ctx); err != nil {
 		log.Fatalf("ensure schema: %v", err)
 	}

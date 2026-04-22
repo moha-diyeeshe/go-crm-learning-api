@@ -1,6 +1,7 @@
 @baseUrl = http://localhost:8080
 @userId = 1
-@token = REPLACE_WITH_JWT_TOKEN_FROM_2FA_VERIFY
+@accessToken = REPLACE_WITH_ACCESS_TOKEN
+@refreshToken = REPLACE_WITH_REFRESH_TOKEN
 
 ### Create user
 POST {{baseUrl}}/api/v1/users
@@ -15,16 +16,16 @@ Content-Type: application/json
 
 ### List users
 GET {{baseUrl}}/api/v1/users
-Authorization: Bearer {{token}}
+Authorization: Bearer {{accessToken}}
 
 ### Get user by id
 GET {{baseUrl}}/api/v1/users/{{userId}}
-Authorization: Bearer {{token}}
+Authorization: Bearer {{accessToken}}
 
 ### Update user
 PUT {{baseUrl}}/api/v1/users/{{userId}}
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{accessToken}}
 
 {
   "name": "Alice Updated",
@@ -32,18 +33,27 @@ Authorization: Bearer {{token}}
   "phone": "+15550002222"
 }
 
-### Login with password (step 1 of 2FA flow)
-POST {{baseUrl}}/api/v1/users/{{userId}}/login
+### Login with email + password (returns access_token + refresh_token)
+POST {{baseUrl}}/api/v1/users/login
 Content-Type: application/json
 
 {
+  "email": "mohamedmuhudin17@gmail.com",
   "password": "Pass@1234"
 }
 
-### Send TOTP code (demo logs code in server terminal)
+### Refresh tokens (returns a rotated access_token + refresh_token)
+POST {{baseUrl}}/api/v1/users/token/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refreshToken}}"
+}
+
+### Legacy flow: Send TOTP code (demo logs code in server terminal)
 POST {{baseUrl}}/api/v1/users/{{userId}}/2fa/send
 
-### Verify TOTP code (replace with code from logs)
+### Legacy flow: Verify TOTP code (replace with code from logs)
 POST {{baseUrl}}/api/v1/users/{{userId}}/2fa/verify
 Content-Type: application/json
 
@@ -51,12 +61,12 @@ Content-Type: application/json
   "code": "123456"
 }
 
-### Copy token from previous response into @token variable above
+### Copy access_token and refresh_token into @accessToken/@refreshToken variables above
 
 ### Change password
 POST {{baseUrl}}/api/v1/users/{{userId}}/password/change
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{accessToken}}
 
 {
   "old_password": "Pass@1234",
@@ -65,4 +75,4 @@ Authorization: Bearer {{token}}
 
 ### Delete user
 DELETE {{baseUrl}}/api/v1/users/{{userId}}
-Authorization: Bearer {{token}}
+Authorization: Bearer {{accessToken}}

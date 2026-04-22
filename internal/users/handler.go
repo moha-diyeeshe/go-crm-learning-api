@@ -21,9 +21,11 @@ func NewHandler(service *Service, jwtManager *auth.JWTManager) *Handler { // Con
 
 func (h *Handler) RegisterRoutes(r chi.Router, authMiddleware func(http.Handler) http.Handler) { // Registers users routes and separates public auth flow from protected CRUD.
 	r.Post("/", h.create)                    // Public signup endpoint.
-	r.Post("/{id}/login", h.login)           // Public login step 1: verify password.
-	r.Post("/{id}/2fa/send", h.sendTOTP)     // Public login step 2: send one-time code.
-	r.Post("/{id}/2fa/verify", h.verifyTOTP) // Public login step 3: verify code and receive JWT token.
+	r.Post("/login", h.loginByEmail)         // Public email/password login endpoint returning access + refresh tokens.
+	r.Post("/token/refresh", h.refreshToken) // Public refresh endpoint returning rotated access + refresh tokens.
+	r.Post("/{id}/login", h.login)           // Legacy public login step 1: verify password by user ID.
+	r.Post("/{id}/2fa/send", h.sendTOTP)     // Legacy public login step 2: send one-time code by user ID.
+	r.Post("/{id}/2fa/verify", h.verifyTOTP) // Legacy public login step 3: verify code and receive token pair.
 
 	r.Group(func(protected chi.Router) { // Groups routes that require authenticated bearer token.
 		protected.Use(authMiddleware)                             // Applies JWT authentication middleware to nested routes.
@@ -136,6 +138,33 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) { // Handles pas
 	writeJSON(w, http.StatusOK, map[string]string{"message": "password verified, continue with 2FA verify"}) // Returns success guidance for next step.
 }
 
+func (h *Handler) loginByEmail(w http.ResponseWriter, r *http.Request) { // Handles direct email/password login and returns token pair.
+	var body struct { // Declares expected request body fields for login endpoint.
+		Email    string `json:"email"`    // Email credential used to identify user account.
+		Password string `json:"password"` // Password credential used for hash verification.
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil { // Decodes incoming JSON credentials payload.
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json body"}) // Returns 400 for malformed request body.
+		return                                                                               // Stops handler after bad request response.
+	}
+	userID, err := h.service.LoginByEmail(r.Context(), body.Email, body.Password) // Verifies credentials and gets authenticated user ID.
+	if err != nil {                                                               // Handles invalid credentials and repository errors.
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()}) // Returns 401 for login failures.
+		return                                                                         // Stops handler after auth failure response.
+	}
+	accessToken, refreshToken, err := h.jwtManager.GenerateTokenPair(userID) // Issues access and refresh JWT tokens.
+	if err != nil {                                                          // Handles token signing failures.
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to generate auth tokens"}) // Returns 500 when token generation fails.
+		return                                                                                                     // Stops handler after server error response.
+	}
+	writeJSON(w, http.StatusOK, map[string]any{ // Returns token pair in JSON response body.
+		"user_id":       userID,       // Includes authenticated user ID for client convenience.
+		"access_token":  accessToken,  // Short-lived token for protected endpoint authorization.
+		"refresh_token": refreshToken, // Long-lived token used to request new token pairs.
+		"token_type":    "Bearer",     // Indicates bearer token authentication scheme.
+	}) // Sends successful login response.
+}
+
 func (h *Handler) changePassword(w http.ResponseWriter, r *http.Request) { // Handles password change endpoint.
 	id, ok := parseID(w, r) // Parses and validates user ID path parameter.
 	if !ok {                // Checks parse result.
@@ -196,12 +225,32 @@ func (h *Handler) verifyTOTP(w http.ResponseWriter, r *http.Request) { // Handle
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()}) // Returns 401 for invalid or expired code.
 		return                                                                         // Stops after auth error response.
 	}
-	token, err := h.jwtManager.GenerateToken(id) // Generates signed JWT token for authenticated user.
+	accessToken, refreshToken, err := h.jwtManager.GenerateTokenPair(id) // Generates access and refresh token pair for authenticated user.
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to generate auth token"}) // Returns 500 when token generation fails unexpectedly.
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to generate auth tokens"}) // Returns 500 when token generation fails unexpectedly.
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"message": "2FA verified", "token": token}) // Returns 200 with bearer token for protected endpoints.
+	writeJSON(w, http.StatusOK, map[string]string{"message": "2FA verified", "access_token": accessToken, "refresh_token": refreshToken, "token_type": "Bearer"}) // Returns 200 with token pair for protected endpoints.
+}
+
+func (h *Handler) refreshToken(w http.ResponseWriter, r *http.Request) { // Handles token refresh flow using refresh token.
+	var body struct { // Declares request body schema for refresh endpoint.
+		RefreshToken string `json:"refresh_token"` // Refresh JWT token used to obtain a new token pair.
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil { // Decodes refresh token request body.
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json body"}) // Returns 400 for malformed request JSON.
+		return                                                                               // Stops handler after bad request response.
+	}
+	accessToken, refreshToken, err := h.jwtManager.RefreshTokens(body.RefreshToken) // Validates refresh token and issues rotated tokens.
+	if err != nil {                                                                 // Handles invalid or expired refresh token.
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid or expired refresh token"}) // Returns 401 for refresh failures.
+		return                                                                                                // Stops handler after auth failure response.
+	}
+	writeJSON(w, http.StatusOK, map[string]string{ // Sends new token pair to caller.
+		"access_token":  accessToken,  // New access token for API calls.
+		"refresh_token": refreshToken, // New refresh token for future renewals.
+		"token_type":    "Bearer",     // Authentication scheme indicator.
+	}) // Completes refresh response.
 }
 
 func parseID(w http.ResponseWriter, r *http.Request) (int64, bool) { // Shared helper to parse and validate URL `{id}` parameter.
