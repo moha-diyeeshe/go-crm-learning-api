@@ -1,5 +1,6 @@
 @baseUrl = http://localhost:8080
 @userId = 1
+@token = REPLACE_WITH_JWT_TOKEN_FROM_2FA_VERIFY
 
 ### Create user
 POST {{baseUrl}}/api/v1/users
@@ -14,13 +15,16 @@ Content-Type: application/json
 
 ### List users
 GET {{baseUrl}}/api/v1/users
+Authorization: Bearer {{token}}
 
 ### Get user by id
 GET {{baseUrl}}/api/v1/users/{{userId}}
+Authorization: Bearer {{token}}
 
 ### Update user
 PUT {{baseUrl}}/api/v1/users/{{userId}}
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "name": "Alice Updated",
@@ -47,9 +51,12 @@ Content-Type: application/json
   "code": "123456"
 }
 
+### Copy token from previous response into @token variable above
+
 ### Change password
 POST {{baseUrl}}/api/v1/users/{{userId}}/password/change
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "old_password": "Pass@1234",
@@ -58,3 +65,4 @@ Content-Type: application/json
 
 ### Delete user
 DELETE {{baseUrl}}/api/v1/users/{{userId}}
+Authorization: Bearer {{token}}
